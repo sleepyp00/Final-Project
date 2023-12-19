@@ -1,0 +1,13 @@
+hopsworks
+numpy
+newsdataapi
+python-dotenv
+requests
+gradio
+hopsworks
+ipywidgets
+newspaper
+bertopic
+nltk
+datasets
+-U sentence-transformers
