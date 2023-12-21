@@ -7,6 +7,9 @@ import newsdataapi
 from dotenv import load_dotenv
 from newspaper import Article
 import time
+import hopsworks
+import pickle
+import tempfile
 
 # Load environment variables from .env file
 load_dotenv()
@@ -23,29 +26,74 @@ class NewsFeed:
         a.download()
         a.parse()
         return a.text()
+    
+    def save_state():
+        return False
 
 class NEWSDATAFeed(NewsFeed):
-    def __init__(self, language: str = 'en') -> None:
+    def __init__(self, language: str = 'en', timeframe:str = "24", start_page:str = None) -> None:
         super().__init__(language)
-        self.api_key = os.getenv("NEWSDATA")
-        self.api = newsdataapi.NewsDataApiClient(apikey=self.api_key)
-        self.nextPage = None
+        self.nextPage = start_page
+        self.base_url = self.prepare_base_url(language, os.getenv("NEWSDATA"), timeframe)
         
     def get_daily_news(self):
-        #limited to 30 credits
-        results = []
-        for i in range(30):
-            response = self.api.news_api(timeframe=24, language=self.language, page = self.nextPage, full_content=True)
-            for article in response['results']:
-                results.append({'id':article['article_id'], 
-                                'title':article['title'],
-                                'link':article['link'],
-                                'content':article['content']})
-            time.sleep(1)
+        #limited to 30 credits at a time
+        results = {"title":[], "link":[], "content":[]}
+        for i in range(1):
+            response = requests.get(self.get_next_page())
+            try:
+                response.raise_for_status()
+                data = response.json()
+                self.nextPage = data['nextPage']
+                for article in data['results']:
+                    results['title'].append(article['title'])
+                    results['link'].append(article['link'])
+                    results['content'].append(article['content'])
+                time.sleep(1)
+            except requests.exceptions.HTTPError as err:
+                self.nextPage = None
+                print(f"HTTP error occurred: {err}")
+                break
         return results
     
+    def prepare_base_url(self, language:str, api_key:str, timeframe:str):
+        return "https://newsdata.io/api/1/news?apikey=" + api_key + "&language=" + language + "&timeframe=" + timeframe
+            
+        
+    def get_next_page(self):
+        if self.nextPage is not None:
+            return self.base_url + "&page=" + self.nextPage
+        else:
+            return self.base_url
+        
+    def save_state(self):
+        return self.nextPage is not None
+        
+    
 if __name__ == "__main__":
-    pass
+    project = hopsworks.login()
+    dataset_api = project.get_dataset_api()
+    try:
+        if dataset_api.exists("Resources/FinalProject/NEWSDATAFeed.pkl"):
+            dataset_api.download("Resources/FinalProject/NEWSDATAFeed.pkl", overwrite=True)
+            with open("NEWSDATAFeed.pkl", "rb") as file:
+                newsdata_feed = pickle.load(file)
+        else:
+            newsdata_feed = NEWSDATAFeed()
+    except:
+        newsdata_feed = NEWSDATAFeed()
+
+
+    results = newsdata_feed.get_daily_news()
+    if newsdata_feed.save_state():
+        with open("NEWSDATAFeed.pkl", "wb") as file:
+            pickle.dump(newsdata_feed, file)
+            
+        dataset_api.upload("NEWSDATAFeed.pkl", "Resources/FinalProject", overwrite=True)
+
+
+
+
         
 
     

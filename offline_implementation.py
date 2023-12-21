@@ -17,9 +17,9 @@ load_dotenv()
 # Retrieve the token
 my_token = os.getenv("NEWSDATA")
 api = newsdataapi.NewsDataApiClient(apikey=my_token)
-""" response = api.news_api(timeframe=24, language="en")
+response = api.news_api(timeframe=24, language="en", scroll=True, max_result=5)
 with open("object.json", 'w') as file:
-    json.dump(response, file) """
+    json.dump(response, file)
 
 with open("object.json", 'r') as file:
 # Use json.load() to deserialize and load the object from the file
