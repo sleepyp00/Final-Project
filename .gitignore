@@ -3,3 +3,5 @@
 **Models/
 **.json
 **.venv/
+**.pkl
+**temp/

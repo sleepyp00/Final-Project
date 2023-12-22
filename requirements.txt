@@ -11,7 +11,9 @@ newspaper3k
 bertopic
 nltk
 datasets
+sklearn
 #-U sentence-transformers
 twofish
 modal
 pandas
+joblib
