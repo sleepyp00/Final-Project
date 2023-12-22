@@ -2,3 +2,4 @@
 .env
 **Models/
 **.json
+**.venv/

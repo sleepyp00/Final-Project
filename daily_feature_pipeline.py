@@ -1,18 +1,22 @@
+import numpy as np
+
 import os
+from pygooglenews import GoogleNews
 import requests
+import newsdataapi
+from dotenv import load_dotenv
 from newspaper import Article
 import time
 import hopsworks
 import pickle
-import modal
-from modal import Stub, Volume, Image
-from pathlib import Path
+import tempfile
 
 from sentence_transformers import SentenceTransformer
 from datetime import date, timedelta, datetime
 import pandas as pd
 
-
+# Load environment variables from .env file
+load_dotenv()
 
 class NewsFeed:
     def __init__(self, language:str = 'en') -> None:
@@ -37,14 +41,15 @@ class NEWSDATAFeed(NewsFeed):
     def __init__(self, language: str = 'en', timeframe:str = "24", start_page:str = None, today:date = date.today()) -> None:
         super().__init__(language)
         self.nextPage = start_page
-        self.base_url = self.prepare_base_url(language, os.environ["NEWSDATA"], timeframe)
+        self.base_url = self.prepare_base_url(language, os.getenv("NEWSDATA"), timeframe)
+        self.should_save = False
         self.today = today
 
         
     def get_daily_news(self):
-        #limited to 30 credits at a time, we use 20 to have some margin
+        #limited to 30 credits at a time
         results = {"title":[], "link":[], "content":[]}
-        for i in range(20):
+        for i in range(1):
             response = requests.get(self.get_next_page())
             try:
                 response.raise_for_status()
@@ -59,6 +64,7 @@ class NEWSDATAFeed(NewsFeed):
                 self.nextPage = None
                 print(f"HTTP error occurred: {err}")
                 break
+        self.should_save = self.nextPage is not None or len(results['link']) > 0
         return results
     
     def prepare_base_url(self, language:str, api_key:str, timeframe:str):
@@ -70,13 +76,19 @@ class NEWSDATAFeed(NewsFeed):
             return self.base_url + "&page=" + self.nextPage
         else:
             return self.base_url
+        
+    def save_state(self):
+        return self.should_save
     
     def on_load(self):
         if self.today != date.today():
             self.today = date.today()
             self.nextPage = None
         
-def load_feed(dataset_api):
+    
+if __name__ == "__main__":
+    project = hopsworks.login()
+    dataset_api = project.get_dataset_api()
     try:
         if dataset_api.exists("Resources/FinalProject/NEWSDATAFeed.pkl"):
             dataset_api.download("Resources/FinalProject/NEWSDATAFeed.pkl", overwrite=True)
@@ -88,83 +100,28 @@ def load_feed(dataset_api):
         news_feed = NEWSDATAFeed()
     news_feed.on_load()
 
-    return news_feed
-
-def store_news_features(project, results):
-    fs = project.get_feature_store()
-
-    embedding_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
-    embeddings = embedding_model.encode(results['content'], show_progress_bar=True)
-    results['embedding'] = embeddings.tolist()
-    results['time'] = date.today()
-    df = pd.DataFrame(results)
-
-    columns = df.columns.tolist()
-
-    news_fg = fs.get_or_create_feature_group(
-        name="news",
-        version=1,
-        primary_key=columns,
-        description="Current News dataset",
-        event_time="time")
-    news_fg.insert(df)
-
-def f():
-    project = hopsworks.login()
-    dataset_api = project.get_dataset_api()
-    news_feed = load_feed(dataset_api)
 
     results = news_feed.get_daily_news()
+    if news_feed.save_state():
+        with open("NEWSDATAFeed.pkl", "wb") as file:
+            pickle.dump(news_feed, file)
+            
+        dataset_api.upload("NEWSDATAFeed.pkl", "Resources/FinalProject", overwrite=True)
 
-    with open("NEWSDATAFeed.pkl", "wb") as file:
-        pickle.dump(news_feed, file)
+        fs = project.get_feature_store()
 
-    dataset_api.upload("NEWSDATAFeed.pkl", "Resources/FinalProject", overwrite=True)
+        embedding_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
+        embeddings = embedding_model.encode(results['content'], show_progress_bar=True)
+        results['embedding'] = embeddings.tolist()
+        results['time'] = date.today()
+        df = pd.DataFrame(results)
 
-    if len(results['link']) > 0:
-        store_news_features(project, results)
+        columns = df.columns.tolist()
 
-
-LOCAL=False
-
-if LOCAL == False:
-   stub = Stub(name = "news_daily")
-   image = Image.debian_slim(python_version="3.10").pip_install(["hopsworks",
-                                            "requests",
-                                            "newspaper3k",
-                                            "sentence-transformers",
-                                            "pandas"]) 
-
-   #@stub.function(image=image, schedule=modal.Period(days=1), secret=modal.Secret.from_name("HOPSWORKS_API_KEY"))
-   @stub.function(image=image, schedule=modal.Period(hours = 2), secrets=[modal.Secret.from_name("HOPSWORKS_API_KEY"),
-                                        modal.Secret.from_name("NEWSDATA")])
-   def g():
-       f()
-
-    
-if __name__ == "__main__":
-    if LOCAL == True :
-        # Load environment variables from .env file
-        g()
-    else:
-        #modal.deploy()
-        with stub.run():
-            g.remote()
-    
-
-
-
-
-
-        
-
-
-
-
-
-
-
-
-        
-
-    
+        news_fg = fs.get_or_create_feature_group(
+            name="news",
+            version=1,
+            primary_key=columns,
+            description="Current News dataset",
+            event_time="time")
+        news_fg.insert(df)

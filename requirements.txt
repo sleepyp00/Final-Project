@@ -1,3 +1,4 @@
+sentence-transformers
 hopsworks
 numpy
 newsdataapi
@@ -6,8 +7,11 @@ requests
 gradio
 hopsworks
 ipywidgets
-newspaper
+newspaper3k
 bertopic
 nltk
 datasets
--U sentence-transformers
+#-U sentence-transformers
+twofish
+modal
+pandas
