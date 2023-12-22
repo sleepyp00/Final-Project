@@ -11,6 +11,10 @@ import hopsworks
 import pickle
 import tempfile
 
+from sentence_transformers import SentenceTransformer
+from datetime import date, timedelta, datetime
+import pandas as pd
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -29,12 +33,18 @@ class NewsFeed:
     
     def save_state():
         return False
+    
+    def on_load(self):
+        pass
 
 class NEWSDATAFeed(NewsFeed):
-    def __init__(self, language: str = 'en', timeframe:str = "24", start_page:str = None) -> None:
+    def __init__(self, language: str = 'en', timeframe:str = "24", start_page:str = None, today:date = date.today()) -> None:
         super().__init__(language)
         self.nextPage = start_page
         self.base_url = self.prepare_base_url(language, os.getenv("NEWSDATA"), timeframe)
+        self.should_save = False
+        self.today = today
+
         
     def get_daily_news(self):
         #limited to 30 credits at a time
@@ -54,6 +64,7 @@ class NEWSDATAFeed(NewsFeed):
                 self.nextPage = None
                 print(f"HTTP error occurred: {err}")
                 break
+        self.should_save = self.nextPage is not None or len(results['link']) > 0
         return results
     
     def prepare_base_url(self, language:str, api_key:str, timeframe:str):
@@ -67,7 +78,12 @@ class NEWSDATAFeed(NewsFeed):
             return self.base_url
         
     def save_state(self):
-        return self.nextPage is not None
+        return self.should_save
+    
+    def on_load(self):
+        if self.today != date.today():
+            self.today = date.today()
+            self.nextPage = None
         
     
 if __name__ == "__main__":
@@ -77,19 +93,42 @@ if __name__ == "__main__":
         if dataset_api.exists("Resources/FinalProject/NEWSDATAFeed.pkl"):
             dataset_api.download("Resources/FinalProject/NEWSDATAFeed.pkl", overwrite=True)
             with open("NEWSDATAFeed.pkl", "rb") as file:
-                newsdata_feed = pickle.load(file)
+                news_feed = pickle.load(file)
         else:
-            newsdata_feed = NEWSDATAFeed()
+            news_feed = NEWSDATAFeed()
     except:
-        newsdata_feed = NEWSDATAFeed()
+        news_feed = NEWSDATAFeed()
+    news_feed.on_load()
 
 
-    results = newsdata_feed.get_daily_news()
-    if newsdata_feed.save_state():
+    results = news_feed.get_daily_news()
+    if news_feed.save_state():
         with open("NEWSDATAFeed.pkl", "wb") as file:
-            pickle.dump(newsdata_feed, file)
+            pickle.dump(news_feed, file)
             
         dataset_api.upload("NEWSDATAFeed.pkl", "Resources/FinalProject", overwrite=True)
+
+        fs = project.get_feature_store()
+
+        embedding_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
+        embeddings = embedding_model.encode(results['content'], show_progress_bar=True)
+        results['embedding'] = embeddings.tolist()
+        results['time'] = date.today()
+        df = pd.DataFrame(results)
+
+        columns = df.columns.tolist()
+
+        news_fg = fs.get_or_create_feature_group(
+            name="news",
+            version=1,
+            primary_key=columns,
+            description="Current News dataset",
+            event_time="time")
+        news_fg.insert(df)
+
+
+
+
 
 
 

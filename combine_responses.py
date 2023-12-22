@@ -37,7 +37,7 @@ df = feature_view.get_batch_data(
 
 results = {"title":[], "link":[], "content":[]}
 for i in range(3):
-    for j in range(8):
+    for j in range(9):
         with open("object"+str(i) + str(j)+".json", 'r') as file:
         # Use json.load() to deserialize and load the object from the file
             response = json.load(file)
