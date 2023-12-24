@@ -142,7 +142,6 @@ image = Image.debian_slim(python_version="3.10").pip_install(["hopsworks",
                                         "sentence-transformers",
                                         "pandas"]) 
 
-#@stub.function(image=image, schedule=modal.Period(days=1), secret=modal.Secret.from_name("HOPSWORKS_API_KEY"))
 @stub.function(image=image, schedule=modal.Period(hours = 2), secrets=[modal.Secret.from_name("HOPSWORKS_API_KEY"),
                                     modal.Secret.from_name("NEWSDATA")])
 def g():

@@ -17,7 +17,7 @@ fs = project.get_feature_store()
 news_fg = fs.get_feature_group(name="news", version=1)
 query = news_fg.select_all()
 
-feature_view = fs.get_or_create_feature_view(name="news",
+feature_view = fs.get_or_create_feature_view(name="news_view",
                                   version=1,
                                   description="Read from news dataset",
                                   query=query)
@@ -182,18 +182,51 @@ titles = titles[documents != None]
 links = links[documents != None]
 document_data = {"topic":topics, 
               "probability":probs, 
-              "title":titles.tolist(), 
-              "link":links.tolist()}
+              "title":titles, 
+              "link":links}
 document_dataframe = pd.DataFrame(document_data)
 
 
 topic_dataframe = info
-keywords = np.empty(len(topic_scores), dtype='object')
-for topic, value in topic_scores.items():
-    keywords[topic + 1] = value
-topic_dataframe["keywords"] = keywords
+keywords = [None]*len(topic_scores)
+scores = [None]*len(topic_scores)
+for topic, values in topic_scores.items():
+    keyword = [value[0] for value in values]
+    score = [value[1] for value in values]
 
-embedding_model = "sentence-transformers/all-mpnet-base-v2"
+    keywords[topic + 1] = keyword
+    scores[topic + 1] = score
+topic_dataframe["keywords"] = keywords
+topic_dataframe["scores"] = keywords
+
+
+
+""" embedding_model = "sentence-transformers/all-mpnet-base-v2"
 topic_model.save("Models/bertopic_pickle", serialization="pickle", save_ctfidf=True)
 topic_model.save("Models/bertopic_safetensor", serialization="safetensors", save_ctfidf=True)
-pass
+pass """
+
+#fs = project.get_feature_store()
+
+def save_dataframe(df, name:str, version:int = 1, description:str = "", overwrite:bool = True):
+  columns = df.columns.tolist()
+
+  fg = fs.get_or_create_feature_group(
+      name=name,
+      version=version,
+      primary_key=columns,
+      description=description)
+  fg.insert(df, overwrite = overwrite)
+
+save_dataframe(document_dataframe,
+               name = "daily_document_info",
+               version = 1,
+               description="info about today's news documents")
+
+save_dataframe(topic_dataframe,
+               name = "daily_topic_info",
+               version = 1,
+               description="topic summary of today's news")
+
+
+

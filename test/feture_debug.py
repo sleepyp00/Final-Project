@@ -47,22 +47,29 @@ class NEWSDATAFeed(NewsFeed):
     def get_daily_news(self):
         #limited to 30 credits at a time, we use 20 to have some margin
         results = {"title":[], "link":[], "content":[]}
-        for i in range(1):
+        for i in range(30):
             response = requests.get(self.get_next_page())
             try:
                 response.raise_for_status()
                 data = response.json()
                 self.nextPage = data['nextPage']
                 for article in data['results']:
-                    results['title'].append(article['title'])
-                    results['link'].append(article['link'])
-                    results['content'].append(article['content'])
+                    if self.is_valid_article(article):
+                        results['title'].append(article['title'])
+                        results['link'].append(article['link'])
+                        results['content'].append(article['content'])
                 time.sleep(1)
             except requests.exceptions.HTTPError as err:
                 self.nextPage = None
                 print(f"HTTP error occurred: {err}")
                 break
         return results
+    
+    def is_valid_article(self, article):
+        is_valid = article['title'] is not None
+        is_valid = is_valid and article['link'] is not None
+        is_valid = is_valid and article['content'] is not None
+        return is_valid
     
     def prepare_base_url(self, language:str, api_key:str, timeframe:str):
         return "https://newsdata.io/api/1/news?apikey=" + api_key + "&language=" + language + "&timeframe=" + timeframe
@@ -75,7 +82,7 @@ class NEWSDATAFeed(NewsFeed):
             return self.base_url
     
     def on_load(self):
-        self.base_url = self.prepare_base_url(self.language, os.environ["NEWSDATA_DEV"], self.timeframe)
+        self.base_url = self.prepare_base_url(self.language, os.environ["NEWSDATA"], self.timeframe)
         if self.today != date.today():
             self.today = date.today()
             self.nextPage = None
@@ -141,7 +148,7 @@ if __name__ == "__main__":
     with open("test_results_test.pkl", "rb") as file:
         results = pickle.load(file) """
     
-    with open("test_results.pkl", "rb") as file:
+    """ with open("test_results.pkl", "rb") as file:
         results = pickle.load(file)
 
     #if len(results['link']) > 0:
@@ -152,7 +159,7 @@ if __name__ == "__main__":
     embedding_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
     embeddings = embedding_model.encode(results['content'], show_progress_bar=True)
     results['embedding'] = embeddings.tolist()
-    results['time'] = date.today()
+    results['time'] = date.today() """
 
     
 

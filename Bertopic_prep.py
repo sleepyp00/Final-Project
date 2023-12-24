@@ -14,8 +14,7 @@ from sentence_transformers import SentenceTransformer
 from bertopic.representation import KeyBERTInspired
 from pathlib import Path
 
-# Pre-calculate embeddings
-embedding_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
+embedding_model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
 from umap import UMAP
 
@@ -23,7 +22,7 @@ umap_model = UMAP(n_neighbors=15, n_components=5, min_dist=0.0, metric='cosine',
 
 from hdbscan import HDBSCAN
 
-hdbscan_model = HDBSCAN(min_cluster_size=150, metric='euclidean', cluster_selection_method='eom', prediction_data=True)
+hdbscan_model = HDBSCAN(metric='euclidean', cluster_selection_method='eom', prediction_data=True)
 
 
 vectorizer_model = CountVectorizer(stop_words="english", min_df=2, ngram_range=(1, 2))

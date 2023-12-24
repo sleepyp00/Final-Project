@@ -1,0 +1,15 @@
+bertopic==0.16.0
+hopsworks==3.4.3
+hsfs==3.4.5
+huggingface-hub==0.20.1
+numpy==1.26.2
+pandas==2.0.3
+sentence-transformers==2.2.2
+tqdm==4.66.1
+transformers==4.36.2
+
+torch 
+torchvision 
+torchaudio  
+
+
