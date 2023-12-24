@@ -11,6 +11,8 @@ from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from datetime import date, timedelta, datetime
 import pandas as pd
+from dotenv import load_dotenv
+load_dotenv()
 
 
 
@@ -37,7 +39,7 @@ class NEWSDATAFeed(NewsFeed):
     def __init__(self, language: str = 'en', timeframe:str = "24", start_page:str = None, today:date = date.today()) -> None:
         super().__init__(language)
         self.nextPage = start_page
-        self.base_url = self.prepare_base_url(language, os.environ["NEWSDATA"], timeframe)
+        self.base_url = self.prepare_base_url(language, os.environ["NEWSDATA_DEV"], timeframe)
         self.today = today
         self.timeframe = timeframe
 
@@ -45,29 +47,22 @@ class NEWSDATAFeed(NewsFeed):
     def get_daily_news(self):
         #limited to 30 credits at a time, we use 20 to have some margin
         results = {"title":[], "link":[], "content":[]}
-        for i in range(20):
+        for i in range(1):
             response = requests.get(self.get_next_page())
             try:
                 response.raise_for_status()
                 data = response.json()
                 self.nextPage = data['nextPage']
                 for article in data['results']:
-                    if self.is_valid_article(article):
-                        results['title'].append(article['title'])
-                        results['link'].append(article['link'])
-                        results['content'].append(article['content'])
+                    results['title'].append(article['title'])
+                    results['link'].append(article['link'])
+                    results['content'].append(article['content'])
                 time.sleep(1)
             except requests.exceptions.HTTPError as err:
                 self.nextPage = None
                 print(f"HTTP error occurred: {err}")
                 break
         return results
-    
-    def is_valid_article(self, article):
-        is_valid = article['title'] is not None
-        is_valid = is_valid and article['link'] is not None
-        is_valid = is_valid and article['content'] is not None
-        return is_valid
     
     def prepare_base_url(self, language:str, api_key:str, timeframe:str):
         return "https://newsdata.io/api/1/news?apikey=" + api_key + "&language=" + language + "&timeframe=" + timeframe
@@ -80,7 +75,7 @@ class NEWSDATAFeed(NewsFeed):
             return self.base_url
     
     def on_load(self):
-        self.base_url = self.prepare_base_url(self.language, os.environ["NEWSDATA"], self.timeframe)
+        self.base_url = self.prepare_base_url(self.language, os.environ["NEWSDATA_DEV"], self.timeframe)
         if self.today != date.today():
             self.today = date.today()
             self.nextPage = None
@@ -125,6 +120,9 @@ def f():
 
     results = news_feed.get_daily_news()
 
+    with open("test_results.pkl", "wb") as file:
+        pickle.dump(results, file)
+
     with open("NEWSDATAFeed.pkl", "wb") as file:
         pickle.dump(news_feed, file)
 
@@ -134,24 +132,28 @@ def f():
         store_news_features(project, results)
 
 
-
-stub = Stub(name = "news_daily")
-image = Image.debian_slim(python_version="3.10").pip_install(["hopsworks",
-                                        "requests",
-                                        "newspaper3k",
-                                        "sentence-transformers",
-                                        "pandas"]) 
-
-#@stub.function(image=image, schedule=modal.Period(days=1), secret=modal.Secret.from_name("HOPSWORKS_API_KEY"))
-@stub.function(image=image, schedule=modal.Period(hours = 2), secrets=[modal.Secret.from_name("HOPSWORKS_API_KEY"),
-                                    modal.Secret.from_name("NEWSDATA")])
-def g():
-    f()
-
     
 if __name__ == "__main__":
-    with stub.run():
-        g.remote()
+    f()
+    #results = {"title":["a"], "link":["a"], "content":[None]}
+    """ with open("test_results_test.pkl", "wb") as file:
+        pickle.dump(results, file)
+    with open("test_results_test.pkl", "rb") as file:
+        results = pickle.load(file) """
+    
+    with open("test_results.pkl", "rb") as file:
+        results = pickle.load(file)
+
+    #if len(results['link']) > 0:
+    #    store_news_features(project, results)
+        
+    results = {"title":["a"], "link":["a"], "content":[None]}
+
+    embedding_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
+    embeddings = embedding_model.encode(results['content'], show_progress_bar=True)
+    results['embedding'] = embeddings.tolist()
+    results['time'] = date.today()
+
     
 
 
