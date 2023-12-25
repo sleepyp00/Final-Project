@@ -11,6 +11,7 @@ from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from datetime import date, timedelta, datetime
 import pandas as pd
+import joblib
 
 
 
@@ -102,7 +103,11 @@ def load_feed(dataset_api):
 def store_news_features(project, results):
     fs = project.get_feature_store()
 
-    embedding_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
+    mr = project.get_model_registry()
+    embedding_model = mr.get_model("news_embedding", version = 1)
+    model_dir = embedding_model.download()
+    embedding_model = joblib.load(model_dir + "/news_embedding.pkl")
+
     embeddings = embedding_model.encode(results['content'], show_progress_bar=True)
     results['embedding'] = embeddings.tolist()
     results['time'] = date.today()
@@ -136,11 +141,12 @@ def f():
 
 
 stub = Stub(name = "news_daily")
-image = Image.debian_slim(python_version="3.10").pip_install(["hopsworks",
+image = Image.debian_slim(python_version="3.10").pip_install(["hopsworks==3.4.3",
                                         "requests",
                                         "newspaper3k",
-                                        "sentence-transformers",
-                                        "pandas"]) 
+                                        "sentence-transformers==2.2.2",
+                                        "pandas==2.0.3",
+                                        "joblib"]) 
 
 @stub.function(image=image, schedule=modal.Period(hours = 2), secrets=[modal.Secret.from_name("HOPSWORKS_API_KEY"),
                                     modal.Secret.from_name("NEWSDATA")])

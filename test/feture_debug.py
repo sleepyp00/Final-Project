@@ -141,6 +141,7 @@ def f():
 
     
 if __name__ == "__main__":
+    pass
     f()
     #results = {"title":["a"], "link":["a"], "content":[None]}
     """ with open("test_results_test.pkl", "wb") as file:
@@ -148,7 +149,7 @@ if __name__ == "__main__":
     with open("test_results_test.pkl", "rb") as file:
         results = pickle.load(file) """
     
-    """ with open("test_results.pkl", "rb") as file:
+    with open("test_results.pkl", "rb") as file:
         results = pickle.load(file)
 
     #if len(results['link']) > 0:
@@ -159,7 +160,7 @@ if __name__ == "__main__":
     embedding_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
     embeddings = embedding_model.encode(results['content'], show_progress_bar=True)
     results['embedding'] = embeddings.tolist()
-    results['time'] = date.today() """
+    results['time'] = date.today()
 
     
 

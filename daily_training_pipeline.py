@@ -1,8 +1,6 @@
 from bertopic import BERTopic
 import pandas as pd
 import numpy as np
-from bertopic.representation import KeyBERTInspired, MaximalMarginalRelevance, PartOfSpeech
-from sentence_transformers import SentenceTransformer
 import hopsworks
 import joblib
 import modal
@@ -40,9 +38,12 @@ def f():
                                     version=1,
                                     description="Read from news dataset",
                                     query=query)
-
+    
+    
+    #Get the data uploaded today
+    #Only seems to work with tomorrow as end time
     today = datetime.now().date()
-    start_date = today - timedelta(days=7)
+    start_date = today
     tomorrow = today + timedelta(days=1)
 
     df = feature_view.get_batch_data(
@@ -103,7 +104,7 @@ def f():
         keywords[topic + 1] = keyword
         scores[topic + 1] = score
     topic_dataframe["keywords"] = keywords
-    topic_dataframe["scores"] = keywords
+    topic_dataframe["scores"] = scores
 
     save_dataframe(document_dataframe,
                 fs,
