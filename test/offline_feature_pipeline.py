@@ -4,12 +4,8 @@ from newspaper import Article
 import time
 import hopsworks
 import pickle
-import modal
-from modal import Stub, Volume, Image
-from pathlib import Path
 
-from sentence_transformers import SentenceTransformer
-from datetime import date, timedelta, datetime
+from datetime import date
 import pandas as pd
 import joblib
 
@@ -41,7 +37,7 @@ class NEWSDATAFeed(NewsFeed):
     def __init__(self, language: str = 'en', timeframe:str = "24", start_page:str = None, today:date = date.today()) -> None:
         super().__init__(language)
         self.nextPage = start_page
-        self.base_url = self.prepare_base_url(language, os.environ["NEWSDATA"], timeframe)
+        self.base_url = self.prepare_base_url(language, os.environ["NEWSDATA_DEV"], timeframe)
         self.today = today
         self.timeframe = timeframe
         self.category_to_index = self.get_category_mapping()
@@ -50,7 +46,7 @@ class NEWSDATAFeed(NewsFeed):
     def get_daily_news(self):
         #limited to 30 credits at a time, we use 20 to have some margin
         results = {"title":[], "link":[], "content":[], "category":[]}
-        for i in range(20):
+        for i in range(30):
             response = requests.get(self.get_next_page())
             try:
                 response.raise_for_status()
@@ -101,7 +97,7 @@ class NEWSDATAFeed(NewsFeed):
             return self.base_url
     
     def on_load(self):
-        self.base_url = self.prepare_base_url(self.language, os.environ["NEWSDATA"], self.timeframe)
+        self.base_url = self.prepare_base_url(self.language, os.environ["NEWSDATA_DEV"], self.timeframe)
         if self.today != date.today():
             self.today = date.today()
             self.nextPage = None
@@ -157,26 +153,11 @@ def f():
 
     if len(results['link']) > 0:
         store_news_features(project, results)
-
-
-
-stub = Stub(name = "news_daily")
-image = Image.debian_slim(python_version="3.10").pip_install(["hopsworks==3.4.3",
-                                        "requests",
-                                        "newspaper3k",
-                                        "sentence-transformers==2.2.2",
-                                        "pandas==2.0.3",
-                                        "joblib"]) 
-
-@stub.function(image=image, gpu="t4", schedule=modal.Period(hours = 2), secrets=[modal.Secret.from_name("HOPSWORKS_API_KEY"),
-                                    modal.Secret.from_name("NEWSDATA")])
-def g():
-    f()
+    
 
     
 if __name__ == "__main__":
-    with stub.run():
-        g.remote()
+    f()
     
 
 

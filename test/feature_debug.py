@@ -82,7 +82,7 @@ class NEWSDATAFeed(NewsFeed):
             return self.base_url
     
     def on_load(self):
-        self.base_url = self.prepare_base_url(self.language, os.environ["NEWSDATA"], self.timeframe)
+        self.base_url = self.prepare_base_url(self.language, os.environ["NEWSDATA_DEV"], self.timeframe)
         if self.today != date.today():
             self.today = date.today()
             self.nextPage = None
@@ -149,19 +149,34 @@ if __name__ == "__main__":
     with open("test_results_test.pkl", "rb") as file:
         results = pickle.load(file) """
     
-    with open("test_results.pkl", "rb") as file:
-        results = pickle.load(file)
+    """ with open("test_results.pkl", "rb") as file:
+        results = pickle.load(file) """
 
     #if len(results['link']) > 0:
     #    store_news_features(project, results)
         
-    results = {"title":["a"], "link":["a"], "content":[None]}
+    #results = {"title":["a"], "link":["a"], "content":[None]}
+    
 
-    embedding_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
+    """ embedding_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
     embeddings = embedding_model.encode(results['content'], show_progress_bar=True)
     results['embedding'] = embeddings.tolist()
-    results['time'] = date.today()
+    results['time'] = date.today() """
 
+    """ project = hopsworks.login()
+    fs = project.get_feature_store()
+    df = pd.DataFrame(results)
+
+    columns = df.columns.tolist()
+
+    news_fg = fs.get_or_create_feature_group(
+        name="news",
+        version=1,
+        primary_key=columns,
+        description="Current News dataset",
+        event_time="time")
+    news_fg.insert(df)
+ """
     
 
 
