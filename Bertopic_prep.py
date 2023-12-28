@@ -13,6 +13,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sentence_transformers import SentenceTransformer
 from bertopic.representation import KeyBERTInspired
 from pathlib import Path
+from utils import replace_model
 
 embedding_model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
@@ -35,37 +36,6 @@ representation_model = {
     "KeyBERT": keybert_model,
 }
 
-def replace_model(mr, 
-                  model,
-                  name:str, 
-                  version:int, 
-                  new_name:str = None,
-                  description:str = ""):
-    # Specify the directory path
-    if new_name is None:
-        new_name = name
-    model_dir = Path("temp/model_" + new_name)
-
-    # Create the directory if it doesn't exist
-    model_dir.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, model_dir / (new_name + ".pkl"))
-
-    try:
-        old_model = mr.get_model(name= name,
-                    version=version)
-        old_model.delete()
-        print("deleted old version",version,"of model")
-    except:
-        print("Unable to retrieve old model for replacement")
-
-    hw_model = mr.python.create_model(
-        name=new_name, 
-        version=version,
-        description=description
-    )
-
-    # Upload the model to the model registry, including all files in 'model_dir'
-    hw_model.save(model_dir)
 
     
 

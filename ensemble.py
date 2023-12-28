@@ -5,19 +5,16 @@ from torch import nn
 import torch.nn.functional as F
 #from Resnet_Implementation import Resnet18
 
-class DeepClassificationEnsemble:
+class DeepEnsemble:
     def __init__(
             self,
-            Model,
-            n_models:int,
-            inputChannels:int, 
-            n_classes:int,
+            models,
             device:torch.device = torch.device('cpu')
             ) -> None:
         
-        self.models = [Model(inputChannels, n_classes) for i in range(n_models)]
-        self.n_classes = n_classes
-        self.n_models = n_models
+        self.models = models
+        self.n_classes = models[0].output_dim
+        self.n_models = len(models)
         self.device = device
 
     def forward(self, x):
