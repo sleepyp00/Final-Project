@@ -13,68 +13,10 @@ import torch.optim as optim
 from sklearn.metrics import confusion_matrix
 from ensemble import DeepEnsemble
 from pathlib import Path
+from training_setup import Training_Setup
+from finetune_net import Network
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-class Training_Setup:
-    def __init__(
-            self,
-            lr:float,
-            weight_decay:float = 0,
-            gamma:float = 0.8,
-            milestones:list = None,
-            weights = None,
-            ) -> None:
-        
-        self.lr = lr
-        self.weight_decay = weight_decay
-        self.gamma = gamma
-        self.milestones = milestones
-        self.weights = weights
-
-
-    def create_training_setup(self, model):
-        loss_function = nn.CrossEntropyLoss(weight=self.weights)
-        optimizer = optim.Adam(model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
-        if self.milestones is not None:
-            scheduler = optim.lr_scheduler.MultiStepLR(optimizer, self.milestones, self.gamma)
-        else:
-            scheduler = None
-        return (loss_function, optimizer, scheduler)
-
-class Network(nn.Module):
-    def __init__(self,input_dim:int, output_dim:int, layer_widths:list = []) -> None:
-        super().__init__()
-
-        self.input_dim = input_dim
-        self.layer_widths = layer_widths
-        self.output_dim = output_dim
-
-        
-
-        if len(layer_widths) > 0:
-            self.FC_initial = nn.Linear(input_dim, layer_widths[0])
-            self.hidden_layers = self.prepare_hidden_layers(layer_widths)
-            self.FC_final = nn.Linear(layer_widths[-1], output_dim)
-        else:
-            self.FC_initial = nn.Linear(input_dim, output_dim)
-            self.hidden_layers = nn.Sequential()
-            self.FC_final = nn.Sequential()
-        
-
-    def prepare_hidden_layers(self, layer_widths):
-        hidden_layers = [nn.Sequential(nn.Linear(layer_widths[i], layer_widths[i+1]), nn.ReLU()) for i in range(len(layer_widths) - 1)]
-        #hidden_layers.append(nn.ReLU())
-        return nn.Sequential(*hidden_layers)
-
-    def forward(self, x):
-        out = F.relu(self.FC_initial(x))
-        out = self.hidden_layers(out)
-        out = self.FC_final(out)
-        return out
-
-    def probabilities(self, x):
-        return F.softmax(self.forward(x), dim = -1)
 
 
 
@@ -110,18 +52,13 @@ unique_values, counts = np.unique(targets, return_counts=True)
 weights = counts.sum()/(len(unique_values)*counts)
 weights = torch.tensor(weights, device=device, dtype=torch.float32)
 
-X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.1, stratify=targets)
+X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.05, stratify=targets)
 
 X_train = torch.tensor(X_train, device=device, dtype=torch.float32)
 X_test = torch.tensor(X_test, device=device, dtype=torch.float32)
 
 y_train = torch.tensor(y_train, device=device)
 y_test = torch.tensor(y_test, device=device)
-
-datasets = {
-    "train":TensorDataset(X_train, y_train),
-    "validation":TensorDataset(X_test, y_test)
-}
 
 model = Network(768, 5, [512])
 """ model = DeepEnsemble(models=[Network(768, 5, [512]),
@@ -155,7 +92,8 @@ dataloaders = {
 train_model(model=model, 
             epochs=epochs, 
             training_setup=training_setup,
-            dataloaders=dataloaders)
+            dataloaders=dataloaders, 
+            save_path="Models/base_classifier.pth")
 
 """ train_ensemble_standard(
     DE=model, 
@@ -185,7 +123,7 @@ print("ece:", ece)
 print("Confusion Matrix:")
 print(conf_matrix)
 
-""" project = hopsworks.login()
+project = hopsworks.login()
 mr = project.get_model_registry()
 
 
@@ -194,7 +132,8 @@ replace_model(mr,
               model,
               name="base_classifier",
               version=1,
-              description="This model is finetuned on news data") """
+              description="This model is finetuned on news data",
+              metrics = {"accuracy":acc})
 
 pass
 

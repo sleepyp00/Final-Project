@@ -7,3 +7,5 @@
 **temp/
 **Data/
 **.csv
+**__pycache__/
+**.pyc

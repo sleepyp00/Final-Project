@@ -46,7 +46,7 @@ class NEWSDATAFeed(NewsFeed):
     def get_daily_news(self):
         #limited to 30 credits at a time, we use 20 to have some margin
         results = {"title":[], "link":[], "content":[], "category":[]}
-        for i in range(30):
+        for i in range(10):
             response = requests.get(self.get_next_page())
             try:
                 response.raise_for_status()

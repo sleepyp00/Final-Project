@@ -41,19 +41,20 @@ def f():
     
     
     #Get the data uploaded today
-    #Only seems to work with tomorrow as end time
+    #Only seems to work properly with tomorrow as end time
     today = datetime.now().date()
-    start_date = today
+    start_date = today - timedelta(days=1)
     tomorrow = today + timedelta(days=1)
 
     df = feature_view.get_batch_data(
             start_time=start_date,
             end_time=tomorrow
         )
+    
+    df = df.drop_duplicates(subset=['title'])
 
     mr = project.get_model_registry()
         
-
     embedding_model = load_hopsworks_model(mr, "news_embedding", version = 1)
     umap_model = load_hopsworks_model(mr, "news_umap", version = 1)
     hdbscan_model = load_hopsworks_model(mr, "news_hbdscan", version = 1)

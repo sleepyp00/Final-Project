@@ -68,60 +68,6 @@ def accuracy(model, dataloader):
     accuracy = correct/N
     return accuracy.item()
 
-""" def train_model(model, epochs, loss_function, optimizer, dataloaders, save_path = "Models/model.pth", scheduler = None):
-    model = model.to(device)
-    
-    if "validation" in dataloaders:
-        perform_val = True
-        valDataLoader = dataloaders["validation"]
-    else:
-        perform_val = False
-        valDataLoader = None
-
-    trainDataLoader = dataloaders["train"]
-
-    best_accuracy = 0.0
-
-    for epoch in tqdm(range(epochs)):
-        for i, (images, labels) in enumerate(trainDataLoader):
-            images = images.to(device)
-            labels = labels.to(device)
-
-            optimizer.zero_grad()
-            output = model(images)
-            loss = loss_function(output, labels)
-            loss.backward()
-            optimizer.step()
-
-        if perform_val:
-            model.eval()
-            with torch.no_grad():
-                acc = accuracy(model, valDataLoader)
-                if acc > best_accuracy:
-                    best_accuracy = acc
-                    print("New best validation accuracy: ", best_accuracy)
-                    torch.save(model, save_path)
-            model.train()
-            
-        if scheduler is not None:
-            scheduler.step()
-
-    if not perform_val:
-        torch.save(model, save_path)
-    model = torch.load(save_path)
-
-def train_ensemble_standard(DE, epochs, loss_function, optimizer, dataloaders, save_path = "Models/model.pth", save_each:bool = False, scheduler = None):
-    def get_sub_path(model_nr):
-        return save_path[:save_path.rfind(".")] + "_" + str(model_nr) + ".pth"
-
-    for i, model in enumerate(DE):
-        print("Training sub model nr", i)
-        if save_each:
-            train_model(model, epochs, loss_function, optimizer, dataloaders, save_path=get_sub_path(i), scheduler=scheduler)
-        else:
-            train_model(model, epochs, loss_function, optimizer, dataloaders, scheduler=scheduler)
-    torch.save(DE, save_path) """
-
 
 def train_model(model, epochs, training_setup, dataloaders, save_path = "Models/model.pth"):
     model = model.to(device)
@@ -156,7 +102,7 @@ def train_model(model, epochs, training_setup, dataloaders, save_path = "Models/
                 acc = accuracy(model, valDataLoader)
                 if acc > best_accuracy:
                     best_accuracy = acc
-                    print("New best validation accuracy: ", best_accuracy)
+                    #print("New best validation accuracy: ", best_accuracy)
                     torch.save(model, save_path)
             model.train()
             
@@ -185,7 +131,8 @@ def replace_model(mr,
                   name:str, 
                   version:int, 
                   new_name:str = None,
-                  description:str = ""):
+                  description:str = "", 
+                  metrics = None):
     # Specify the directory path
     if new_name is None:
         new_name = name
@@ -206,6 +153,7 @@ def replace_model(mr,
     hw_model = mr.python.create_model(
         name=new_name, 
         version=version,
+        metrics = metrics,
         description=description
     )
 
