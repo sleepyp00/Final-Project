@@ -41,7 +41,7 @@ def f():
 
     data, _ = feature_view.training_data()
 
-    #Just in case should not occur
+    #Just in case, should not occur
     data = data.drop_duplicates(subset=['title'])
 
     features = np.array(data["embedding"].values.tolist())
@@ -119,7 +119,7 @@ def f():
     print(conf_matrix)
 
     replace_model(mr,
-                model,
+                model.cpu(),
                 name="finetuned_classifier",
                 version=1,
                 description="This model is finetuned recent news data and is updated continously",

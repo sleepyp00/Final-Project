@@ -4,8 +4,12 @@ from newspaper import Article
 import time
 import hopsworks
 import pickle
+import modal
+from modal import Stub, Volume, Image
+from pathlib import Path
 
-from datetime import date
+from sentence_transformers import SentenceTransformer
+from datetime import date, timedelta, datetime
 import pandas as pd
 import joblib
 
@@ -46,7 +50,7 @@ class NEWSDATAFeed(NewsFeed):
     def get_daily_news(self):
         #limited to 30 credits at a time, we use 20 to have some margin
         results = {"title":[], "link":[], "content":[], "category":[]}
-        for i in range(10):
+        for i in range(30):
             response = requests.get(self.get_next_page())
             try:
                 response.raise_for_status()
@@ -146,19 +150,33 @@ def f():
 
     results = news_feed.get_daily_news()
 
-    """ with open("NEWSDATAFeed.pkl", "wb") as file:
+    with open("NEWSDATAFeed.pkl", "wb") as file:
         pickle.dump(news_feed, file)
 
     dataset_api.upload("NEWSDATAFeed.pkl", "Resources/FinalProject", overwrite=True)
 
     if len(results['link']) > 0:
-        store_news_features(project, results) """
-    pass
-    
+        store_news_features(project, results)
+
+
+
+stub = Stub(name = "news_daily_2")
+image = Image.debian_slim(python_version="3.10").pip_install(["hopsworks==3.4.3",
+                                        "requests",
+                                        "newspaper3k",
+                                        "sentence-transformers==2.2.2",
+                                        "pandas==2.0.3",
+                                        "joblib"]) 
+
+@stub.function(image=image, gpu="t4", schedule=modal.Period(hours = 2), secrets=[modal.Secret.from_name("HOPSWORKS_API_KEY"),
+                                    modal.Secret.from_name("NEWSDATA_DEV")])
+def g():
+    f()
 
     
 if __name__ == "__main__":
-    f()
+    with stub.run():
+        g.remote()
     
 
 

@@ -45,7 +45,7 @@ project = hopsworks.login()
 mr = project.get_model_registry()
 
 replace_model(mr,
-              embedding_model,
+              embedding_model.cpu(),
               name="news_embedding",
               version=1,
               description="Model used to create embeddings from news documents")

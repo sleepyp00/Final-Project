@@ -118,7 +118,7 @@ print("Confusion Matrix:")
 print(conf_matrix)
 
 replace_model(mr,
-              model,
+              model.cpu(),
               name="finetuned_classifier",
               version=1,
               description="This model is finetuned recent news data and is updated continously",

@@ -129,11 +129,11 @@ mr = project.get_model_registry()
 
 
 replace_model(mr,
-              model,
+              model.cpu(),
               name="base_classifier",
               version=1,
               description="This model is finetuned on news data",
               metrics = {"accuracy":acc})
 
-pass
+
 
