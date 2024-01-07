@@ -11,7 +11,6 @@ from sklearn.model_selection import train_test_split
 import torch.nn.functional as F
 import torch.optim as optim
 from sklearn.metrics import confusion_matrix
-from ensemble import DeepEnsemble
 from pathlib import Path
 from training_setup import Training_Setup
 from finetune_net import Network
@@ -61,13 +60,6 @@ y_train = torch.tensor(y_train, device=device)
 y_test = torch.tensor(y_test, device=device)
 
 model = Network(768, 5, [512])
-""" model = DeepEnsemble(models=[Network(768, 5, [512]),
-                             Network(768, 5, [512]),
-                             Network(768, 5, [512]),
-                             Network(768, 5, [512])])
- """
-""" model = DeepEnsemble(models=[Network(768, 5, [512]),
-                             ]) """
 model.to(device=device)
 model.train()
 

@@ -15,6 +15,10 @@ from bertopic.representation import KeyBERTInspired
 from pathlib import Path
 from utils import replace_model
 
+"""
+Model required by BERTopic are uploaded to the model registry from here
+"""
+
 embedding_model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
 from umap import UMAP

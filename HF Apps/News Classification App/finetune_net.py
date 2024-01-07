@@ -2,10 +2,6 @@ from torch import nn
 import torch 
 import torch.nn.functional as F
 
-"""
-Network used to classify news embeddings
-"""
-
 class Network(nn.Module):
     def __init__(self,input_dim:int, output_dim:int, layer_widths:list = []) -> None:
         super().__init__()

@@ -1,8 +1,5 @@
 import torch.nn.functional as F
 import torch.optim as optim
-from sklearn.metrics import confusion_matrix
-from ensemble import DeepEnsemble
-from pathlib import Path
 from torch import nn
 
 

@@ -11,8 +11,9 @@ import modal
 from modal import Stub, Image
 from finetune_net import Network
 
-
-
+"""
+Every day the classification model is fine tuned on the most recent news category data
+"""
 
 def f():
     N_CLASSES = 5

@@ -4,7 +4,6 @@ import numpy as np
 import hopsworks
 from hsfs.feature_view import FeatureView
 
-
 def delete_feature_group(fs, name:str, version:int):
     try:
         fg = fs.get_feature_group(

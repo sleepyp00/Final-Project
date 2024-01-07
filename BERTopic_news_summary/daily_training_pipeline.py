@@ -7,7 +7,10 @@ import modal
 from modal import Stub, Volume, Image
 from datetime import date, timedelta, datetime
 
-
+"""
+Downloads all bertopic models and all recent news articles and applied BERTopic.
+The resulting topic information is uploaded to the Hopsworks feature store
+"""
 
 def load_hopsworks_model(model_registry, name:str, version:int = 1):
     model = model_registry.get_model(name, version = version)
@@ -40,8 +43,7 @@ def f():
                                     query=query)
     
     
-    #Get the data uploaded today
-    #Only seems to work properly with tomorrow as end time
+    #Get recently uploaded news data
     today = datetime.now().date()
     start_date = today - timedelta(days=1)
     tomorrow = today + timedelta(days=1)
@@ -55,6 +57,7 @@ def f():
 
     mr = project.get_model_registry()
         
+    #Download necessary BERTopic models
     embedding_model = load_hopsworks_model(mr, "news_embedding", version = 1)
     umap_model = load_hopsworks_model(mr, "news_umap", version = 1)
     hdbscan_model = load_hopsworks_model(mr, "news_hbdscan", version = 1)
@@ -107,12 +110,14 @@ def f():
     topic_dataframe["keywords"] = keywords
     topic_dataframe["scores"] = scores
 
+    # Upload the documents and their respective topic label to the feature store
     save_dataframe(document_dataframe,
                 fs,
                 name = "daily_document_info",
                 version = 1,
                 description="info about today's news documents")
 
+    # Upload information about the topic uncluding keywords, id, count, etc
     save_dataframe(topic_dataframe,
                 fs,
                 name = "daily_topic_info",

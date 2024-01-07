@@ -3,6 +3,10 @@ from hsfs.feature_view import FeatureView
 import modal
 from modal import Stub, Image
 
+"""
+Removes the news articles collected over the last week to prevent exceeding the storage of the feature store
+and to keep the stored news relevant
+"""
 
 def delete_feature_group(fs, name:str, version:int):
     try:

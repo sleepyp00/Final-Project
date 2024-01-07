@@ -168,7 +168,7 @@ image = Image.debian_slim(python_version="3.10").pip_install(["hopsworks==3.4.3"
                                         "pandas==2.0.3",
                                         "joblib"]) 
 
-@stub.function(image=image, gpu="t4", schedule=modal.Period(hours = 2), secrets=[modal.Secret.from_name("HOPSWORKS_API_KEY"),
+@stub.function(image=image, gpu="t4", schedule=modal.Period(minutes = 45), secrets=[modal.Secret.from_name("HOPSWORKS_API_KEY"),
                                     modal.Secret.from_name("NEWSDATA_DEV")])
 def g():
     f()

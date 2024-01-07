@@ -13,7 +13,13 @@ from datetime import date, timedelta, datetime
 import pandas as pd
 import joblib
 
+"""
+Downloads new articles from different sources, for now the only source is newsdata API
+Due to rate limiting we store a state of the latest page visited so that we can 
+continue gathering data from were we left off
 
+Downloads the embedding model from hopsworks and uploads the embeddings of the news documents
+"""
 
 class NewsFeed:
     def __init__(self, language:str = 'en') -> None:

@@ -7,8 +7,12 @@ import json
 import matplotlib.pyplot as plt
 from utils import train_ensemble_standard, train_model, accuracy, get_dataloaders
 import joblib
-
 import pandas as pd
+
+"""
+Prepares and uploads the news category dataset to Hopsworks
+"""
+
 df = pd.read_json('Data/News_Category_Dataset_v3.json', lines = True)
 df = df.drop_duplicates(subset='headline')
 df = df.drop(columns=['link', 'headline', 'authors', 'date'])
